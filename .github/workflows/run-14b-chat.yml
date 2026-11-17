@@ -65,7 +65,7 @@ jobs:
           "$SERVER_BIN" -m model/qwen2.5-14b-instruct-q4_k_m-00001-of-00003.gguf \
             --lora model/trial1-14b-lora.gguf \
             --model-draft model/qwen2.5-0.5b-instruct-q4_k_m.gguf \
-            --spec-draft-n-max 5 --mlock \
+            --spec-draft-n-max 5 --load-mode mmap+mlock \
             --host 127.0.0.1 --port 8080 -c 1024 -t 4 --threads-batch 4 \
             > llama-server.log 2>&1 &
           for i in $(seq 1 36); do
@@ -74,7 +74,11 @@ jobs:
             fi
             sleep 5
           done
-          curl -s --fail --max-time 5 http://127.0.0.1:8080/health
+          if ! curl -s --fail --max-time 5 http://127.0.0.1:8080/health; then
+            echo "SERVER FAILED TO START — last 40 lines of llama-server.log:"
+            tail -40 llama-server.log
+            exit 1
+          fi
           CHAT_PORT=8765 python3 chat_proxy_llama.py > proxy.log 2>&1 &
           sleep 5
           curl -s --fail --max-time 5 http://127.0.0.1:8765/health
