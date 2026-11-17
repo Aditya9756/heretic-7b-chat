@@ -15,20 +15,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download base model (Q4_K_M, 2 parts, ~4.7 GB)
+      - name: Download base model (Q4_0, 2 parts, ~4.1 GB)
         run: |
           mkdir -p model
-          curl -L --fail --retry 2 -o model/qwen2.5-7b-instruct-q4_k_m-00001-of-00002.gguf \
-            "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct-GGUF/resolve/main/qwen2.5-7b-instruct-q4_k_m-00001-of-00002.gguf"
-          curl -L --fail --retry 2 -o model/qwen2.5-7b-instruct-q4_k_m-00002-of-00002.gguf \
-            "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct-GGUF/resolve/main/qwen2.5-7b-instruct-q4_k_m-00002-of-00002.gguf"
+          curl -L --fail --retry 2 -o model/qwen2.5-7b-instruct-q4_0-00001-of-00002.gguf \
+            "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct-GGUF/resolve/main/qwen2.5-7b-instruct-q4_0-00001-of-00002.gguf"
+          curl -L --fail --retry 2 -o model/qwen2.5-7b-instruct-q4_0-00002-of-00002.gguf \
+            "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct-GGUF/resolve/main/qwen2.5-7b-instruct-q4_0-00002-of-00002.gguf"
           ls -la model/
           echo "MODEL-OK"
 
       - name: Download draft model for speculative decoding (0.5B, ~0.5 GB)
         run: |
-          curl -L --fail --retry 2 -o model/qwen2.5-0.5b-instruct-q4_k_m.gguf \
-            "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf"
+          curl -L --fail --retry 2 -o model/qwen2.5-0.5b-instruct-q4_0.gguf \
+            "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_0.gguf"
           ls -la model/
           echo "DRAFT-OK"
 
@@ -57,10 +57,10 @@ jobs:
           SERVER_BIN=$(find llama -name "llama-server" -type f | head -1)
           LIB_DIR=$(dirname "$SERVER_BIN")/../lib
           [ -d "$LIB_DIR" ] && export LD_LIBRARY_PATH="$LIB_DIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-          "$SERVER_BIN" -m model/qwen2.5-7b-instruct-q4_k_m-00001-of-00002.gguf \
+          "$SERVER_BIN" -m model/qwen2.5-7b-instruct-q4_0-00001-of-00002.gguf \
             --lora model/trial6-lora.gguf \
-            --model-draft model/qwen2.5-0.5b-instruct-q4_k_m.gguf \
-            --spec-draft-n-max 5 --load-mode mmap+mlock \
+            --model-draft model/qwen2.5-0.5b-instruct-q4_0.gguf \
+            --spec-draft-n-max 8 --load-mode mmap+mlock \
             --host 127.0.0.1 --port 8080 -c 4096 -t 4 --threads-batch 4 \
             > llama-server.log 2>&1 &
           for i in $(seq 1 36); do
