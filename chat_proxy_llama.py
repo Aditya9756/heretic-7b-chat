@@ -16,7 +16,8 @@ from urllib.parse import parse_qs, urlparse
 PORT = int(os.environ.get("CHAT_PORT", "8765"))
 KEY = os.environ["CHAT_KEY"]
 LLAMA_URL = os.environ.get("LLAMA_URL", "http://127.0.0.1:8080")
-MAX_TOKENS = 80
+TITLE = os.environ.get("MODEL_TITLE", "7B Model se baat karo")
+MAX_TOKENS = 150
 
 PAGE = """<!DOCTYPE html>
 <html lang="hi"><head><meta charset="utf-8">
@@ -79,7 +80,8 @@ def ask_llama(prompt):
         "model": "qwen2.5-7b-trial6",
         "messages": [{"role": "user", "content": prompt}],
         "max_tokens": MAX_TOKENS,
-        "temperature": 0,
+        "temperature": 0.7,
+        "repetition_penalty": 1.1,
         "stream": False,
     }).encode()
     req = urllib.request.Request(
@@ -120,7 +122,9 @@ class Handler(BaseHTTPRequestHandler):
             if not self._key_ok(qs.get("key", [""])[0]):
                 self._send(403, "Galat key.", "text/plain")
                 return
-            self._send(200, PAGE, "text/html; charset=utf-8")
+            page = PAGE.replace("7B Model se baat karo", TITLE).replace(
+                "<title>7B Model Chat</title>", f"<title>{TITLE}</title>")
+            self._send(200, page, "text/html; charset=utf-8")
             return
         self._send(404, json.dumps({"error": "not found"}))
 
