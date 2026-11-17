@@ -25,6 +25,13 @@ jobs:
           ls -la model/
           echo "MODEL-OK"
 
+      - name: Download draft model for speculative decoding (0.5B, ~0.5 GB)
+        run: |
+          curl -L --fail --retry 2 -o model/qwen2.5-0.5b-instruct-q4_k_m.gguf \
+            "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf"
+          ls -la model/
+          echo "DRAFT-OK"
+
       - name: Download Trial 6 LoRA adapter (8 parts, from this repo's v1.0 release)
         env:
           GH_TOKEN: ${{ github.token }}
@@ -52,6 +59,8 @@ jobs:
           [ -d "$LIB_DIR" ] && export LD_LIBRARY_PATH="$LIB_DIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
           "$SERVER_BIN" -m model/qwen2.5-7b-instruct-q4_k_m-00001-of-00002.gguf \
             --lora model/trial6-lora.gguf \
+            --model-draft model/qwen2.5-0.5b-instruct-q4_k_m.gguf \
+            --spec-draft-n-max 5 --mlock \
             --host 127.0.0.1 --port 8080 -c 1024 -t 4 --threads-batch 4 \
             > llama-server.log 2>&1 &
           for i in $(seq 1 24); do
