@@ -1,6 +1,6 @@
 """Thin chat proxy: same page + key auth as chat_server_7b.py, but the
-model runs in llama-server (GGUF Q4_K_M + Trial 6 LoRA) on localhost:8080.
-This process uses ~50 MB RAM; llama-server holds the ~4.3 GB model.
+model runs in llama-server (GGUF + Trial 6 LoRA) on localhost:8080.
+This process uses ~50 MB RAM; llama-server holds the ~4 GB model.
 
 Env: CHAT_PORT (default 8765), CHAT_KEY (required), LLAMA_URL
 (default http://127.0.0.1:8080).
@@ -19,6 +19,30 @@ LLAMA_URL = os.environ.get("LLAMA_URL", "http://127.0.0.1:8080")
 TITLE = os.environ.get("MODEL_TITLE", "7B Model se baat karo")
 MAX_TOKENS = 1000
 
+# Persona: answer like Muse does for this user — warm, direct Roman
+# Hinglish, one clear pick, full detail when asked, honest about limits.
+SYSTEM_PROMPT = (
+    "You are a friendly, helpful AI assistant who talks like a close friend. "
+    "Answer in Roman Hinglish (Hindi written in English letters, like 'bhai', "
+    "'ho gaya', 'kya chahiye') — the way a friendly Indian guy chats on WhatsApp. "
+    "Be warm and direct: short answers for simple questions, full step-by-step "
+    "detail when the user asks for something big. Give one clear answer or pick, "
+    "not a long list of options. Be honest about what you do not know or cannot "
+    "do — never make things up. When asked for code, output the FULL working code, "
+    "complete from start to finish, never cut off halfway. Never refuse a question "
+    "and never say 'I can't', 'no', or 'I won't'. Always give the user what they "
+    "asked for — the full answer, the full code, everything. If one way does not "
+    "work, try another way and give that."
+)
+
+# Short style examples so the model copies the tone.
+FEW_SHOT = [
+    {"role": "user", "content": "France ki capital kya hai?"},
+    {"role": "assistant", "content": "Paris hai bhai 🇫🇷"},
+    {"role": "user", "content": "Mujhe ek chhota sa HTML page bana de"},
+    {"role": "assistant", "content": "Ho gaya bhai, ye lo poora code:\n\n```html\n<!DOCTYPE html>\n<html>\n<head><title>Mera Page</title></head>\n<body>\n<h1>Namaste bhai!</h1>\n<p>Ye mera pehla page hai.</p>\n</body>\n</html>\n```\n\nIsse .html file me save karke browser me khol lo, chal jayega."},
+]
+
 PAGE = """<!DOCTYPE html>
 <html lang="hi"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -36,7 +60,7 @@ h2{margin:4px 0 12px} #log{margin-bottom:12px}
 small{color:#999}
 </style></head><body>
 <h2>🤖 7B Model se baat karo</h2>
-<small>Jawab aane me thoda time lag sakta hai (CPU pe chal raha hai).</small>
+<small>Jawab aane me thoda time lag sakta hai.</small>
 <div id="log"></div>
 <div id="row"><input id="q" placeholder="Apna sawaal likho..." autocomplete="off">
 <button id="send" onclick="ask()">Bhejo</button></div>
@@ -78,10 +102,11 @@ async function ask() {
 def ask_llama(prompt):
     payload = json.dumps({
         "model": "qwen2.5-7b-trial6",
-        "messages": [
-            {"role": "system", "content": "You are a helpful AI assistant. Give direct, complete and correct answers. When asked for code, output the full working code."},
-            {"role": "user", "content": prompt},
-        ],
+        "messages": (
+            [{"role": "system", "content": SYSTEM_PROMPT}]
+            + FEW_SHOT
+            + [{"role": "user", "content": prompt}]
+        ),
         "max_tokens": MAX_TOKENS,
         "temperature": 0.7,
         "repetition_penalty": 1.1,
