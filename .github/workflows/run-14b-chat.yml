@@ -79,7 +79,7 @@ jobs:
             tail -40 llama-server.log
             exit 1
           fi
-          CHAT_PORT=8765 python3 chat_proxy_llama.py > proxy.log 2>&1 &
+          CHAT_PORT=8765 MODEL_TITLE="14B Model se baat karo" python3 chat_proxy_llama.py > proxy.log 2>&1 &
           sleep 5
           curl -s --fail --max-time 5 http://127.0.0.1:8765/health
           echo "PROXY-OK"
