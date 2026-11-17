@@ -17,7 +17,7 @@ PORT = int(os.environ.get("CHAT_PORT", "8765"))
 KEY = os.environ["CHAT_KEY"]
 LLAMA_URL = os.environ.get("LLAMA_URL", "http://127.0.0.1:8080")
 TITLE = os.environ.get("MODEL_TITLE", "7B Model se baat karo")
-MAX_TOKENS = 150
+MAX_TOKENS = 1000
 
 PAGE = """<!DOCTYPE html>
 <html lang="hi"><head><meta charset="utf-8">
@@ -78,7 +78,10 @@ async function ask() {
 def ask_llama(prompt):
     payload = json.dumps({
         "model": "qwen2.5-7b-trial6",
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [
+            {"role": "system", "content": "You are a helpful AI assistant. Give direct, complete and correct answers. When asked for code, output the full working code."},
+            {"role": "user", "content": prompt},
+        ],
         "max_tokens": MAX_TOKENS,
         "temperature": 0.7,
         "repetition_penalty": 1.1,
@@ -91,7 +94,7 @@ def ask_llama(prompt):
         method="POST",
     )
     t0 = time.time()
-    with urllib.request.urlopen(req, timeout=600) as resp:
+    with urllib.request.urlopen(req, timeout=1800) as resp:
         data = json.loads(resp.read())
     ans = data["choices"][0]["message"]["content"]
     return ans.strip(), time.time() - t0
